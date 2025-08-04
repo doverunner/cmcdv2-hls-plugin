@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HLS.js CMCD v2 Plugin Sample - v1.5.0</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        video {
+            width: 100%;
+            max-width: 600px;
+            height: auto;
+        }
+        .config {
+            background: #f5f5f5;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .logs {
+            background: #000;
+            color: #0f0;
+            padding: 10px;
+            border-radius: 5px;
+            height: 200px;
+            overflow-y: scroll;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>HLS.js CMCD v2 Plugin Sample (v1.5.0)</h1>
+    
+    <video id="video" controls></video>
+    
+    <div class="config">
+        <h3>Plugin Configuration</h3>
+        <p><strong>Mode:</strong> Query</p>
+        <p><strong>Reporting URL:</strong> https://collector-gcloud-function-560723680185.us-east1.run.app/cmcd/response-mode</p>
+        <p><strong>Note:</strong> This sample uses query mode instead of JSON batch mode</p>
+    </div>
+    
+    <div class="logs" id="logs"></div>
+
+    <!-- HLS.js Library v1.5.0 -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.0/dist/hls.min.js"></script>
+    
+    <!-- CMCD v2 Response Mode Plugin -->
+    <script src="./responseModePlugin.js"></script>
+
+    <script>
+        const video = document.getElementById('video');
+        const logs = document.getElementById('logs');
+        
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            logs.innerHTML += `[${timestamp}] ${message}\n`;
+            logs.scrollTop = logs.scrollHeight;
+            console.log(message);
+        }
+
+        if (Hls.isSupported()) {
+            const hls = new Hls({
+                debug: false
+            });
+
+            // Sample HLS manifest URL
+            const manifestUri = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
+
+            // Configure CMCD v2 Response Mode Plugin in query mode
+            const responseModePluginConfig = {
+                mode: 'query',
+                url: 'https://collector-gcloud-function-560723680185.us-east1.run.app/cmcd/response-mode',
+                includeKeys: ['ts', 'ttfb', 'ttlb', 'url', 'pt', 'rc']
+            };
+
+            // Enable the CMCD v2 Response Mode Plugin
+            hlsCmcdResponsePlugin.enableResponseMode(hls, responseModePluginConfig);
+            log('CMCD v2 Response Mode Plugin enabled (query mode)');
+
+            // HLS.js event listeners for debugging
+            hls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
+                log(`Manifest parsed, found ${data.levels.length} quality levels`);
+            });
+
+            hls.on(Hls.Events.LEVEL_SWITCHED, function (event, data) {
+                log(`Level switched to ${data.level}`);
+            });
+
+            hls.on(Hls.Events.FRAG_LOADED, function (event, data) {
+                const duration = data.stats ? Math.round(data.stats.tload - data.stats.trequest) : 'unknown';
+                log(`Fragment loaded: ${data.frag.sn} (${duration}ms)`);
+            });
+
+            hls.on(Hls.Events.ERROR, function (event, data) {
+                if (data.fatal) {
+                    switch (data.type) {
+                        case Hls.ErrorTypes.NETWORK_ERROR:
+                            log('Fatal network error encountered, trying to recover');
+                            hls.startLoad();
+                            break;
+                        case Hls.ErrorTypes.MEDIA_ERROR:
+                            log('Fatal media error encountered, trying to recover');
+                            hls.recoverMediaError();
+                            break;
+                        default:
+                            log('Fatal error, cannot recover');
+                            hls.destroy();
+                            break;
+                    }
+                }
+            });
+
+            hls.attachMedia(video);
+            hls.loadSource(manifestUri);
+
+            log(`Loading HLS manifest: ${manifestUri}`);
+
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            // Native HLS support (Safari)
+            video.src = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
+            log('Using native HLS support');
+        } else {
+            log('HLS is not supported in this browser');
+        }
+
+        // Video event listeners
+        video.addEventListener('loadstart', () => log('Video: loadstart'));
+        video.addEventListener('loadedmetadata', () => log('Video: loadedmetadata'));
+        video.addEventListener('canplay', () => log('Video: canplay'));
+        video.addEventListener('play', () => log('Video: play'));
+        video.addEventListener('playing', () => log('Video: playing'));
+        video.addEventListener('pause', () => log('Video: pause'));
+        video.addEventListener('seeking', () => log('Video: seeking'));
+        video.addEventListener('seeked', () => log('Video: seeked'));
+    </script>
+</body>
+</html>
