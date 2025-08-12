@@ -52,7 +52,7 @@
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     
     <!-- CMCD v2 Response Mode Plugin -->
-    <script src="./responseModePlugin.js"></script>
+    <script src="./cmcdV2Plugin.js"></script>
 
     <script>
         const video = document.getElementById('video');
@@ -74,17 +74,18 @@
             // Sample HLS manifest URL
             const manifestUri = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
 
-            // Configure CMCD v2 Response Mode Plugin
-            const responseModePluginConfig = {
-                mode: 'query',
+            // Configure CMCD v2 Plugin
+            const cmcdV2PluginConfig = {
+                reportingMode: 'event',
+                transmissionMode: 'query',
                 batchSize: 1,
                 url: 'https://collector-gcloud-function-560723680185.us-east1.run.app/cmcd/response-mode',
                 // includeKeys: ['ts', 'ttfb', 'ttlb', 'url', 'pt', 'rc', 'ltc']
             };
 
-            // Enable the CMCD v2 Response Mode Plugin
-            hlsCmcdResponsePlugin.enableResponseMode(hls, responseModePluginConfig);
-            log('CMCD v2 Response Mode Plugin enabled');
+            // Enable the CMCD v2 Plugin
+            hlsCmcdV2Plugin.enableCmcdV2(hls, cmcdV2PluginConfig);
+            log('CMCD v2 Plugin enabled');
 
             // HLS.js event listeners for debugging
             hls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {

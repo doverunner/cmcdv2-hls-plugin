@@ -1,8 +1,8 @@
-# CMCD v2 Plugin for HLS.js (CMCDv2 POC)
+# CMCD v2 Plugin for HLS.js (CmcdV2 POC)
 
 ## Overview
 
-The `responseModePlugin` is a JavaScript module designed to work with HLS.js. Its primary purpose is to enable CMCD Version 2 'Response Mode' to collect data related to server responses for media segment requests and report these metrics to a third-party server. Currently, the plugin supports two modes: JSON Mode and Query Mode.
+The `cmcdV2Plugin` is a JavaScript module designed to work with HLS.js. Its primary purpose is to enable CMCD Version 2 'Response Mode' to collect data related to server responses for media segment requests and report these metrics to a third-party server. Currently, the plugin supports two modes: JSON Mode and Query Mode.
 
 This plugin can be used alongside HLS.js's native CMCD (Common Media Client Data) features when available.
 
@@ -12,19 +12,19 @@ This repo has two samples to try the plugin, `sample-hls-latest.html` and `sampl
 
 ## Setup and Integration
 
-Follow these steps to integrate the `responseModePlugin` into your HLS.js application:
+Follow these steps to integrate the `cmcdV2Plugin` into your HLS.js application:
 
 1. **Include Scripts**:
-   Make sure both HLS.js and the `responseModePlugin.js` are included in your HTML file before your application logic:
+   Make sure both HLS.js and the `cmcdV2Plugin.js` are included in your HTML file before your application logic:
    ```html
    <script src="path/to/hls.min.js"></script>
-   <script src="path/to/responseModePlugin.js"></script>
+   <script src="path/to/cmcdV2Plugin.js"></script>
    ```
 
    Also, you can use jsDelivr to get these sources:
    ```html
    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-   <script src="https://cdn.jsdelivr.net/gh/qualabs/hls.js-cmcd-v2-plugin/responseModePlugin.js"></script>
+   <script src="https://cdn.jsdelivr.net/gh/qualabs/hls.js-cmcd-v2-plugin/cmcdV2Plugin.js"></script>
    ```
 
 2. **Initialize HLS.js**:
@@ -44,7 +44,7 @@ Follow these steps to integrate the `responseModePlugin` into your HLS.js applic
        const video = document.getElementById('video');
        const hls = new Hls();
        
-       // ... (responseModePlugin configuration - see below)
+       // ... (cmcdV2Plugin configuration - see below)
 
        hls.attachMedia(video);
        hls.loadSource(manifestUri);
@@ -65,12 +65,12 @@ Follow these steps to integrate the `responseModePlugin` into your HLS.js applic
    });
    ```
 
-4. **Configure the `responseModePlugin`**:
+4. **Configure the `cmcdV2Plugin`**:
    Create a configuration object for the plugin.
    ```javascript
    const reportingUrlString = 'https://collector-gcloud-function-560723680185.us-east1.run.app/cmcd/response-mode';
    
-   const responseModePluginConfig = {
+   const cmcdV2PluginConfig = {
        mode: 'json', // Specify 'json' or 'query'
        batchSize: 8, // Batch is only available with json mode
        url: reportingUrlString, // The URL for the reporting endpoint
@@ -79,10 +79,10 @@ Follow these steps to integrate the `responseModePlugin` into your HLS.js applic
    ```
 
 5. **Enable the Plugin**:
-   After the HLS.js instance is created and configured, enable the `responseModePlugin`.
+   After the HLS.js instance is created and configured, enable the `cmcdV2Plugin`.
    ```javascript
    // In your initPlayer function, after hls creation and configuration:
-   hlsCmcdResponsePlugin.enableResponseMode(hls, responseModePluginConfig);
+   hlsCmcdV2Plugin.enableCmcdV2(hls, cmcdV2PluginConfig);
    ```
 
 ## Configuration Options
