@@ -91,7 +91,7 @@ Follow these steps to integrate the `cmcdV2Plugin` into your HLS.js application:
 - **transmissionMode**: `'json'` or `'query'` - Determines how data is sent to the reporting server
 - **batchSize**: Number (only for JSON mode) - Number of reports to batch before sending
 - **url**: String - The reporting endpoint URL
-- **includeKeys**: Array (optional) - Specific CMCD keys to include. Available keys: `['ts', 'ttfb', 'ttlb', 'url', 'pt', 'rc', 'ltc', 'pr', 'sta', 'msd', 'df', 'sn']`
+- **includeKeys**: Array (optional) - Specific CMCD keys to include. Available keys: `['ts', 'ttfb', 'ttlb', 'url', 'pt', 'rc', 'ltc', 'pr', 'sta', 'msd', 'df', 'sn', 'e']`
 
 ## CMCD Keys Supported
 
