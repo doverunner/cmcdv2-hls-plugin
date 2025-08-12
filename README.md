@@ -71,7 +71,8 @@ Follow these steps to integrate the `cmcdV2Plugin` into your HLS.js application:
    const reportingUrlString = 'https://collector-gcloud-function-560723680185.us-east1.run.app/cmcd/response-mode';
    
    const cmcdV2PluginConfig = {
-       mode: 'json', // Specify 'json' or 'query'
+       reportingMode: 'event', // Specify 'response' or 'event'
+       transmissionMode: 'query', // Specify 'json' or 'query'
        batchSize: 8, // Batch is only available with json mode
        url: reportingUrlString, // The URL for the reporting endpoint
        // includeKeys: ['ts', 'ttfb', 'ttlb', 'url', 'pt', 'rc', 'ltc'] // Will send all keys if not configured
@@ -86,8 +87,8 @@ Follow these steps to integrate the `cmcdV2Plugin` into your HLS.js application:
    ```
 
 ## Configuration Options
-
-- **mode**: `'json'` or `'query'` - Determines how data is sent to the reporting server
+- **reportingMode**: `'response'` or `'event'` - Determines reporting mode to the server
+- **transmissionMode**: `'json'` or `'query'` - Determines how data is sent to the reporting server
 - **batchSize**: Number (only for JSON mode) - Number of reports to batch before sending
 - **url**: String - The reporting endpoint URL
 - **includeKeys**: Array (optional) - Specific CMCD keys to include. Available keys: `['ts', 'ttfb', 'ttlb', 'url', 'pt', 'rc', 'ltc', 'pr', 'sta', 'msd', 'df', 'sn']`
@@ -106,6 +107,7 @@ Follow these steps to integrate the `cmcdV2Plugin` into your HLS.js application:
 - **msd**: Media Start Delay (sent once per session)
 - **df**: Dropped video frames count
 - **sn**: Sequence number for the report
+- **e**: Event
 
 ## Differences from Shaka Player Plugin
 
