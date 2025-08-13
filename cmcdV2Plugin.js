@@ -325,40 +325,52 @@
         //Event Mode
         function setupEventModeListeners() {
             const mediaElement = getMediaElement();
-            if (mediaElement && config.reportingMode == 'event') {
-                mediaElement.addEventListener('playing', function () {
-                    const cmcdResult = processCmcdData({}, 'PLAYING');
-                    if (cmcdResult) {
-                        addEventModeData({
-                            event: 'ps',
-                            cmcdData: cmcdResult.data
-                        });
-                        sendCmcdDataReport(cmcdResult);
-                    }
-                });
+            if (!mediaElement || config.reportingMode !== 'event') return;
 
-                mediaElement.addEventListener('pause', function () {
-                    const cmcdResult = processCmcdData({}, 'PAUSE');
-                    if (cmcdResult) {
-                        addEventModeData({
-                            event: 'ps',
-                            cmcdData: cmcdResult.data
-                        });
-                        sendCmcdDataReport(cmcdResult);
-                    }
-                });
+            function handleMediaEvent(eventType, cmcdEventType, additionalHandler) {
+                const cmcdResult = processCmcdData({}, eventType);
+                if (!cmcdResult) return;
 
-                mediaElement.addEventListener('seeking', function () {
-                    const cmcdResult = processCmcdData({}, 'SEEKING');
-                    if (cmcdResult) {
-                        addEventModeData({
-                            event: 'ps',
-                            cmcdData: cmcdResult.data
-                        });
-                        sendCmcdDataReport(cmcdResult);
-                    }
+                if (additionalHandler) {
+                    additionalHandler(cmcdResult);
+                }
+
+                addEventModeData({
+                    event: cmcdEventType,
+                    cmcdData: cmcdResult.data
                 });
+                sendCmcdDataReport(cmcdResult);
             }
+
+            const eventMappings = [
+                { mediaEvent: 'playing', eventType: 'PLAYING', cmcdEvent: 'ps' },
+                { mediaEvent: 'pause', eventType: 'PAUSE', cmcdEvent: 'ps' },
+                { mediaEvent: 'seeking', eventType: 'SEEKING', cmcdEvent: 'ps' },
+                { mediaEvent: 'waiting', eventType: 'WAITING', cmcdEvent: 'ps' },
+                { mediaEvent: 'ended', eventType: 'ENDED', cmcdEvent: 'ps' }
+            ];
+
+            eventMappings.forEach(({ mediaEvent, eventType, cmcdEvent }) => {
+                mediaElement.addEventListener(mediaEvent, () => {
+                    handleMediaEvent(eventType, cmcdEvent);
+                });
+            });
+
+            mediaElement.addEventListener('volumechange', () => {
+                if (mediaElement.muted) {
+                    console.log('Video has been muted');
+                    handleMediaEvent('MUTED', 'm');
+                } else {
+                    console.log('Video is unmuted');
+                    handleMediaEvent('UNMUTED', 'um');
+                }
+            });
+
+            mediaElement.addEventListener('error', () => {
+                handleMediaEvent('ERROR', 'e', (cmcdResult) => {
+                    cmcdResult.ec = mediaElement.error?.code ?? null;
+                });
+            });
         }
         
         // Setup event mode listeners when media is attached or immediately if already available
