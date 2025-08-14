@@ -143,9 +143,11 @@
 
             // ts
             if (shouldIncludeKey('ts') && requestUri) {
-                const startTime = fragmentStartTimes.get(requestUri.toString());
+                const uriString = requestUri.toString();
+                const startTime = fragmentStartTimes.get(uriString);
                 if (startTime) {
                     cmcdData.ts = Math.round(startTime);
+                    fragmentStartTimes.delete(uriString);
                 }
             }
         }
@@ -187,8 +189,8 @@
                 const mediaElement = getMediaElement();
                 if (shouldIncludeKey('pt') && mediaElement) {
                     let value;
-                    if (hls.liveSyncPosition !== undefined) {
-                        value = Date.now();
+                    if (hls.latestLevelDetails?.live || hls.levels[hls.currentLevel]?.details?.live) {
+                        value = hls.playingDate;
                     } else {
                         value = mediaElement.currentTime;
                     }
@@ -199,9 +201,9 @@
 
                 // ltc
                 if (shouldIncludeKey('ltc') && hls.liveSyncPosition !== undefined && mediaElement) {
-                    const liveLatency = hls.liveSyncPosition - mediaElement.currentTime;
+                    const liveLatency = hls.latency;
                     if (liveLatency > 0) {
-                        cmcdData.ltc = Math.round(liveLatency * 1000);
+                        cmcdData.ltc = liveLatency;
                     }
                 }
 
@@ -233,13 +235,16 @@
 
                 // df
                 if (shouldIncludeKey('df') && mediaElement && mediaElement.getVideoPlaybackQuality) {
-                    cmcdData.df = mediaElement.getVideoPlaybackQuality().droppedVideoFrames;
+                    value = mediaElement.getVideoPlaybackQuality().droppedVideoFrames;
+                    if(value > 0){
+                        cmcdData.df = value;
+                    }
                 }
 
                 // sn
                 if (shouldIncludeKey('sn')) {
-                    cmcdData.sn = sequenceNumber;
                     sequenceNumber = sequenceNumber + 1;
+                    cmcdData.sn = sequenceNumber;
                 }
 
                 return {
