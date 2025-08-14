@@ -377,6 +377,21 @@
                 });
             });
         }
+
+        function setupTimeInterval(){
+            if (config.timeInterval && config.timeInterval > 0) {
+                setInterval(() => {
+                    const cmcdResult = processCmcdData({}, 'TIME_INTERVAL');
+                    if (cmcdResult) {
+                        addEventModeData({
+                            event: 't',
+                            cmcdData: cmcdResult.data
+                        });
+                        sendCmcdDataReport(cmcdResult);
+                    }
+                }, config.timeInterval);
+            }
+        }
         
         // Setup event mode listeners when media is attached or immediately if already available
         if (config.reportingMode == 'event') {
@@ -386,6 +401,9 @@
                 hls.on('hlsMediaAttached', setupEventModeListeners);
             }
         }
+
+        // Setup time interval for periodic reporting
+        setupTimeInterval();
     };
 
     window.hlsCmcdV2Plugin = {
