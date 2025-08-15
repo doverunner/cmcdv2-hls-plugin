@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `cmcdV2Plugin` is a JavaScript module designed to work with HLS.js. Its primary purpose is to enable CMCD Version 2 'Response Mode' to collect data related to server responses for media segment requests and report these metrics to a third-party server. Currently, the plugin supports two modes: JSON Mode and Query Mode.
+The `cmcdV2Plugin` is a JavaScript module designed to work with HLS.js. Its primary purpose is to enable CMCD Version 2 'Response Mode' and 'Event Mode' and report metrics to a third-party server. Currently, the plugin supports two transmission modes: JSON Mode and Query Mode.
 
 This plugin can be used alongside HLS.js's native CMCD (Common Media Client Data) features when available.
 
@@ -71,7 +71,7 @@ Follow these steps to integrate the `cmcdV2Plugin` into your HLS.js application:
    const reportingUrlString = 'https://collector-gcloud-function-560723680185.us-east1.run.app/cmcd/response-mode';
    
    const cmcdV2PluginConfig = {
-       reportingMode: 'event', // Specify 'response' or 'event'
+       reportingMode: 'response', // Specify 'response' or 'event'
        transmissionMode: 'query', // Specify 'json' or 'query'
        batchSize: 8, // Batch is only available with json mode
        url: reportingUrlString, // The URL for the reporting endpoint
@@ -103,11 +103,18 @@ Follow these steps to integrate the `cmcdV2Plugin` into your HLS.js application:
 - **pt**: Playhead time in seconds (VOD) or timestamp (Live)
 - **ltc**: Live latency in milliseconds (Live streams only)
 - **pr**: Playback rate
-- **sta**: Player state (p=playing, a=paused, r=rebuffering, s=starting, k=seeking, e=ended)
+- **sta**: Player state (p=playing, a=paused, w=waiting, k=seeking, e=ended)
 - **msd**: Media Start Delay (sent once per session)
 - **df**: Dropped video frames count
 - **sn**: Sequence number for the report
 - **e**: Event
+
+## Events Supported
+- **ps**: Player State
+- **t**: Time Interval
+- **m**: Muted
+- **um**: Unmuted
+- **e**: Error
 
 ## Differences from Shaka Player Plugin
 
