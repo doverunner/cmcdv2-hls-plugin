@@ -122,13 +122,14 @@
             const { eventData, cmcdData, requestUri } = context;
 
             // ttfb
-            if (shouldIncludeKey('ttfb') && eventData.stats && eventData.stats.tfirst) {
-                cmcdData.ttfb = Math.round(eventData.stats.tfirst - eventData.stats.trequest);
+            let stats = eventData.frag.stats ? { ...eventData.frag.stats } : null;
+            if (shouldIncludeKey('ttfb') && stats && stats.loading?.first && stats.loading?.start) {
+                cmcdData.ttfb = Math.round(stats.loading.first - stats.loading.start);
             }
 
             // ttlb
-            if (shouldIncludeKey('ttlb') && eventData.stats && eventData.stats.tload && eventData.stats.trequest) {
-                cmcdData.ttlb = Math.round(eventData.stats.tload - eventData.stats.trequest);
+            if (shouldIncludeKey('ttlb') && stats && stats.loading.end && stats.loading.start) {
+                cmcdData.ttlb = Math.round(stats.loading.end - stats.loading.start);
             }
 
             // rc
