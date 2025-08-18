@@ -24,7 +24,7 @@ Follow these steps to integrate the `cmcdV2Plugin` into your HLS.js application:
    Also, you can use jsDelivr to get these sources:
    ```html
    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-   <script src="https://cdn.jsdelivr.net/gh/qualabs/hls.js-cmcd-v2-plugin/cmcdV2Plugin.js"></script>
+   <script src="https://cdn.jsdelivr.net/gh/qualabs/cmcdv2-hls-plugin/cmcdV2Plugin.js"></script>
    ```
 
 2. **Initialize HLS.js**:
