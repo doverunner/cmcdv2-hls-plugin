@@ -377,6 +377,14 @@
                     cmcdResult.ec = mediaElement.error?.code ?? null;
                 });
             });
+
+            hls.on('hlsError', (event, data) => {
+                if(data.fatal){
+                    handleMediaEvent('ERROR', 'e', (cmcdResult) => {
+                        cmcdResult.ec = data.response?.code ?? null;
+                    });
+                }
+            });
         }
 
         function setupTimeInterval(){
