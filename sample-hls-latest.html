@@ -41,9 +41,11 @@
     
     <div class="config">
         <h3>Plugin Configuration</h3>
-        <p><strong>Mode:</strong> JSON</p>
-        <p><strong>Batch Size:</strong> 8</p>
-        <p><strong>Reporting URL:</strong> https://collector-gcloud-function-560723680185.us-east1.run.app/cmcd/response-mode</p>
+        <p><strong>Reporting Mode:</strong> Event</p>
+        <p><strong>Transmission Mode:</strong> Query</p>
+        <p><strong>Batch Size:</strong> 1</p>
+        <p><strong>Time Interval:</strong> 30s (periodic event reports)</p>
+        <p><strong>Reporting URL:</strong> https://collector-gcloud-function-560723680185.us-east1.run.app/cmcd/event-mode</p>
     </div>
     
     <div class="logs" id="logs"></div>
@@ -77,9 +79,11 @@
             // Configure CMCD v2 Plugin
             const cmcdV2PluginConfig = {
                 reportingMode: 'event',
-                transmissionMode: 'query',
-                batchSize: 1,
-                url: 'https://collector-gcloud-function-560723680185.us-east1.run.app/cmcd/response-mode',
+                transmissionMode: 'json',
+                batchSize: 8, // Batch is only available with json mode
+                batchTimer: 30, // Timer in seconds to send batch even if not full
+                timeInterval: 10, // Send periodic event reports every 10 seconds
+                url: 'https://collector-gcloud-function-560723680185.us-east1.run.app/cmcd/event-mode',
                 // includeKeys: ['ts', 'ttfb', 'ttlb', 'url', 'pt', 'rc', 'ltc']
             };
 

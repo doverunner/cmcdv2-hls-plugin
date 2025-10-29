@@ -1,8 +1,16 @@
+/**
+ * CMCD v2 Plugin for HLS.js
+ * Based on qualabs/cmcdv2-hls-plugin repository
+ * https://github.com/qualabs/cmcdv2-hls-plugin
+ */
+
 (() => {
     const _enableCmcdV2 = (hls, config) => {
         const currentTransmissionMode = config.transmissionMode || 'json';
         const cmcdBatchArray = (currentTransmissionMode === 'json') ? [] : null;
-        
+        let batchTimer = null;
+        let isSending = false; // Flag to track if a send operation is in progress
+
         function getMediaElement() {
             return hls.media;
         }
@@ -12,6 +20,14 @@
         let msd = null;
         let msdSent = false;
         let fragmentStartTimes = new Map();
+
+        if (config.batchTimer && config.batchTimer > 0 && currentTransmissionMode === 'json') {
+            batchTimer = setInterval(() => {
+                if (cmcdBatchArray.length > 0 && !isSending) {
+                    sendCmcdReport();
+                }
+            }, config.batchTimer * 1000);
+        }
 
         function setupMediaElementListeners() {
             const mediaElement = getMediaElement();
@@ -33,34 +49,88 @@
             hls.on('hlsMediaAttached', setupMediaElementListeners);
         }
 
-        function sendCmcdReport(cmcdData, reportingUrl) {
+        function sendCmcdReport() {
             if (currentTransmissionMode == 'json') {
-                if (!cmcdData || cmcdData.length === 0) return;
-        
+                if (!cmcdBatchArray || cmcdBatchArray.length === 0) return;
+                if (isSending) return;
+
+                isSending = true;
+                const reportingUrl = new URL(config.url);
+                const batchToSend = cmcdBatchArray.splice(0, cmcdBatchArray.length);
+
+                if (config.beforeSend && typeof config.beforeSend === 'function') {
+                    try {
+                        config.beforeSend(batchToSend);
+                    } catch (e) {
+                        console.error('[CMCD Plugin] Error in beforeSend callback:', e);
+                    }
+                }
+
+                console.log(`[CMCD Plugin] Sending batch of ${batchToSend.length} CMCD events.`);
+
                 fetch(reportingUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(cmcdData),
+                    body: JSON.stringify(batchToSend),
                 })
                 .then(reportResponse => {
-                    // console.log(reportResponse.ok ? 'CMCD batch data reported successfully.' : `Reporting server responded with an error.`);
+                    if (reportResponse.ok) {
+                        console.log('[CMCD Plugin] CMCD batch data reported successfully.');
+
+                        if (config.afterSend && typeof config.afterSend === 'function') {
+                            try {
+                                config.afterSend(reportResponse);
+                            } catch (e) {
+                                console.error('[CMCD Plugin] Error in afterSend callback:', e);
+                            }
+                        }
+                    } else {
+                        console.warn(`[CMCD Plugin] Reporting server responded with error: ${reportResponse.status}`);
+
+                        const currentBatchSize = cmcdBatchArray.length;
+                        const totalSize = currentBatchSize + batchToSend.length;
+
+                        if (totalSize > config.batchSize) {
+                            const overflow = totalSize - config.batchSize;
+                            const trimmedBatch = batchToSend.slice(overflow);
+                            console.warn(`[CMCD Plugin] After retry, would exceed limit. Trimmed ${overflow} oldest event(s) from failed batch`);
+                            cmcdBatchArray.unshift(...trimmedBatch);
+                        } else {
+                            cmcdBatchArray.unshift(...batchToSend);
+                        }
+                    }
                 })
                 .catch(error => {
-                    console.error('Error sending CMCD batch data to reporting server:', error);
+                    console.error('[CMCD Plugin] Error sending CMCD batch data to reporting server:', error);
+
+                    const currentBatchSize = cmcdBatchArray.length;
+                    const totalSize = currentBatchSize + batchToSend.length;
+
+                    if (totalSize > config.batchSize) {
+                        const overflow = totalSize - config.batchSize;
+                        const trimmedBatch = batchToSend.slice(overflow);
+                        console.warn(`[CMCD Plugin] After retry, would exceed limit. Trimmed ${overflow} oldest event(s) from failed batch`);
+                        cmcdBatchArray.unshift(...trimmedBatch);
+                    } else {
+                        cmcdBatchArray.unshift(...batchToSend);
+                    }
+                })
+                .finally(() => {
+                    isSending = false;
                 });
             } else if (currentTransmissionMode === 'query') {
-                if (!cmcdData) return;
-                
+                const reportingUrl = new URL(config.url);
+
                 fetch(reportingUrl, {
                     method: 'GET',
                 })
                 .then(reportResponse => {
-                    // console.log(reportResponse.ok ? 'CMCD query data reported successfully.' : `Reporting server responded with an error`);
+                    console.log(reportResponse.ok ? '[CMCD Plugin] CMCD query data reported successfully.' : `[CMCD Plugin] Reporting server responded with an error`);
                 })
                 .catch(error => {
-                    console.error('Error sending CMCD query data to reporting server:', error);
+                    console.error('[CMCD Plugin] Error sending CMCD query data to reporting server:', error);
                 });
             }
         }
@@ -276,19 +346,35 @@
 
         function sendCmcdDataReport(cmcdResult) {
             try {
-                const reportUrl = new URL(config.url);
                 if (currentTransmissionMode == 'json') {
                     const jsonData = cmcdResult.toJSON();
+
                     cmcdBatchArray.push(jsonData);
-                    
-                    if (cmcdBatchArray.length >= config.batchSize) {
-                        sendCmcdReport(cmcdBatchArray.slice(), reportUrl);
-                        cmcdBatchArray.length = 0;
+
+                    if (cmcdBatchArray.length > config.batchSize) {
+                        const overflow = cmcdBatchArray.length - config.batchSize;
+                        const removed = cmcdBatchArray.splice(0, overflow);
+                        console.warn(`[CMCD Plugin] Batch exceeded limit (${cmcdBatchArray.length + overflow}), removed ${removed.length} oldest event(s)`);
+                    }
+
+                    if (cmcdBatchArray.length >= config.batchSize && !isSending) {
+                        sendCmcdReport();
                     }
                 } else if (currentTransmissionMode == 'query') {
+                    const reportUrl = new URL(config.url);
                     const queryString = cmcdResult.toQueryString();
                     reportUrl.searchParams.set('CMCD', queryString);
-                    sendCmcdReport(queryString, reportUrl);
+
+                    // Query mode sends immediately
+                    fetch(reportUrl, {
+                        method: 'GET',
+                    })
+                    .then(reportResponse => {
+                        console.log(reportResponse.ok ? '[CMCD Plugin] CMCD query data reported successfully.' : `[CMCD Plugin] Reporting server responded with an error`);
+                    })
+                    .catch(error => {
+                        console.error('[CMCD Plugin] Error sending CMCD query data to reporting server:', error);
+                    });
                 }
             } catch (e) {
                 console.error('Error sending CMCD data for reporting:', e);
@@ -398,7 +484,7 @@
                         });
                         sendCmcdDataReport(cmcdResult);
                     }
-                }, config.timeInterval);
+                }, config.timeInterval * 1000);
             }
         }
         

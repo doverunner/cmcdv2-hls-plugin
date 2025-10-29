@@ -68,14 +68,18 @@ Follow these steps to integrate the `cmcdV2Plugin` into your HLS.js application:
 4. **Configure the `cmcdV2Plugin`**:
    Create a configuration object for the plugin.
    ```javascript
-   const reportingUrlString = 'https://collector-gcloud-function-560723680185.us-east1.run.app/cmcd/response-mode';
-   
+   const reportingUrlString = 'https://collector-gcloud-function-560723680185.us-east1.run.app/cmcd/event-mode';
+
    const cmcdV2PluginConfig = {
-       reportingMode: 'response', // Specify 'response' or 'event'
-       transmissionMode: 'query', // Specify 'json' or 'query'
-       batchSize: 8, // Batch is only available with json mode
+       reportingMode: 'event', // Specify 'response' or 'event'
+       transmissionMode: 'json', // Specify 'json' or 'query'
+       batchSize: 8, // Batch is only available with json mode (default: 8)
+       batchTimer: 30, // Timer in seconds to send batch even if not full (json mode only, optional)
        url: reportingUrlString, // The URL for the reporting endpoint
+       timeInterval: 10, // Time interval in seconds for periodic event reports (event mode only, optional)
        // includeKeys: ['ts', 'ttfb', 'ttlb', 'url', 'pt', 'rc', 'ltc'] // Will send all keys if not configured
+       // beforeSend: (batch) => { console.log('Sending:', batch); }, // Optional callback before sending
+       // afterSend: (response) => { console.log('Sent:', response); } // Optional callback after successful send
    };
    ```
 
@@ -89,9 +93,13 @@ Follow these steps to integrate the `cmcdV2Plugin` into your HLS.js application:
 ## Configuration Options
 - **reportingMode**: `'response'` or `'event'` - Determines reporting mode to the server
 - **transmissionMode**: `'json'` or `'query'` - Determines how data is sent to the reporting server
-- **batchSize**: Number (only for JSON mode) - Number of reports to batch before sending
+- **batchSize**: Number (only for JSON mode) - Number of reports to batch before sending (default: 8)
+- **batchTimer**: Number (optional, JSON mode only) - Time in seconds to automatically send batch even if not full
 - **url**: String - The reporting endpoint URL
+- **timeInterval**: Number (optional, event mode only) - Time in seconds for periodic event reports
 - **includeKeys**: Array (optional) - Specific CMCD keys to include. Available keys: `['ts', 'ttfb', 'ttlb', 'url', 'pt', 'rc', 'ltc', 'pr', 'sta', 'msd', 'df', 'sn', 'e']`
+- **beforeSend**: Function (optional, JSON mode only) - Callback function called before sending batch. Receives batch array as parameter
+- **afterSend**: Function (optional, JSON mode only) - Callback function called after successful send. Receives response object as parameter
 
 ## CMCD Keys Supported
 
@@ -109,12 +117,30 @@ Follow these steps to integrate the `cmcdV2Plugin` into your HLS.js application:
 - **sn**: Sequence number for the report
 - **e**: Event
 
-## Events Supported
-- **ps**: Player State
-- **t**: Time Interval
+## Events Supported (Event Mode)
+- **ps**: Player State (playing, pause, seeking, waiting, ended)
+- **t**: Time Interval (periodic reports based on `timeInterval` config)
 - **m**: Muted
 - **um**: Unmuted
-- **e**: Error
+- **e**: Error (includes error code as `ec`)
+
+## Key Features
+
+### Batch Management (JSON Mode)
+- **Automatic batch sending**: Sends when batch reaches `batchSize`
+- **Timer-based sending**: Optional `batchTimer` sends batch at regular intervals
+- **Smart retry logic**: Failed requests are re-queued with overflow protection
+- **Prevents data loss**: Batch size limit maintained even on retry
+- **Send locking**: Prevents concurrent send operations
+
+### Callback Support (JSON Mode)
+- **beforeSend**: Called before sending batch, useful for logging or modifying data
+- **afterSend**: Called after successful send, useful for tracking or analytics
+
+### Event Mode Enhancements
+- **Time interval reporting**: Periodic reports via `timeInterval` config
+- **Comprehensive event tracking**: Player state, mute/unmute, errors with error codes
+- **Media element event integration**: Seamless integration with HTML5 media events
 
 ## Differences from Shaka Player Plugin
 
@@ -122,6 +148,8 @@ Follow these steps to integrate the `cmcdV2Plugin` into your HLS.js application:
 - Adapts timing calculations to HLS.js's event data structure
 - Handles HLS.js-specific player state detection
 - Works with HLS.js's fragment loading architecture
+- Enhanced batch management with retry logic and overflow protection
+- Timer-based batch sending for guaranteed delivery intervals
 
 ## Browser Compatibility
 
